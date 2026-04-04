@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Basisdaten
+  height        Float?    // cm
+  gender        String?   // male, female, diverse
+  birthDate     DateTime?
+  activityLevel String?   // sedentary, light, moderate, active, very_active
+
+  // Relations
+  measurements  Measurement[]
+  vitals        Vitals[]
+  nutrition     NutritionLog[]
+  chatMessages  ChatMessage[]
+}
+
+model Measurement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+
+  weight    Float    // kg
+  waist     Float?   // cm - Bauchumfang
+  thigh     Float?   // cm - Beinumfang
+  arm       Float?   // cm - Armumfang
+
+  @@index([userId, date])
+}
+
+model Vitals {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp     DateTime @default(now())
+
+  systolic      Int?     // mmHg
+  diastolic     Int?     // mmHg
+  bloodGlucose  Float?   // mg/dl
+  bloodKetones  Float?   // mmol/L
+  urineKetones  Float?   // mg/dl
+
+  @@index([userId, timestamp])
+}
+
+model NutritionLog {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime @db.Date
+
+  calories       Float
+  protein        Float    // g
+  fat            Float    // g
+  carbs          Float    // g (Brutto)
+  fiber          Float    // g
+  netCarbs       Float    // g (carbs - fiber)
+  skaldemanRatio Float?   // fat / (protein + netCarbs)
+
+  source         String   @default("manual") // manual | import
+
+  @@index([userId, date])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+
+  role      String   // user | assistant
+  content   String
+
+  @@index([userId, timestamp])
+}
