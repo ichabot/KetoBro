@@ -13,7 +13,7 @@ export async function GET() {
   const twelveWeeksAgo = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const [user, measurements, vitals, nutrition, firstMeasurement] = await Promise.all([
+  const [user, measurements, vitals, nutritionDays, firstMeasurement] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.measurement.findMany({
       where: { userId, date: { gte: twelveWeeksAgo } },
@@ -23,7 +23,7 @@ export async function GET() {
       where: { userId, timestamp: { gte: twelveWeeksAgo } },
       orderBy: { timestamp: "asc" },
     }),
-    prisma.nutritionLog.findMany({
+    prisma.nutritionDay.findMany({
       where: { userId, date: { gte: sevenDaysAgo } },
       orderBy: { date: "asc" },
     }),
@@ -34,9 +34,8 @@ export async function GET() {
   ]);
 
   const latestMeasurement = measurements[measurements.length - 1];
-  const latestNutrition = nutrition[nutrition.length - 1];
+  const latestNutrition = nutritionDays[nutritionDays.length - 1];
 
-  // Calculations
   let bmr: number | null = null;
   let tdee: number | null = null;
   let age: number | null = null;
@@ -51,25 +50,42 @@ export async function GET() {
     ? Math.round((latestMeasurement.weight - firstMeasurement.weight) * 10) / 10
     : null;
 
-  // Weekly averages
-  const weeklyAvg = nutrition.length > 0 ? {
-    calories: Math.round(nutrition.reduce((s, n) => s + n.calories, 0) / nutrition.length),
-    protein: Math.round(nutrition.reduce((s, n) => s + n.protein, 0) / nutrition.length),
-    fat: Math.round(nutrition.reduce((s, n) => s + n.fat, 0) / nutrition.length),
-    netCarbs: Math.round(nutrition.reduce((s, n) => s + n.netCarbs, 0) / nutrition.length * 10) / 10,
-    skaldemanRatio: nutrition.filter(n => n.skaldemanRatio).length > 0
-      ? Math.round(nutrition.filter(n => n.skaldemanRatio).reduce((s, n) => s + (n.skaldemanRatio || 0), 0) / nutrition.filter(n => n.skaldemanRatio).length * 100) / 100
+  const weeklyAvg = nutritionDays.length > 0 ? {
+    calories: Math.round(nutritionDays.reduce((s, n) => s + n.totalCalories, 0) / nutritionDays.length),
+    protein: Math.round(nutritionDays.reduce((s, n) => s + n.totalProtein, 0) / nutritionDays.length),
+    fat: Math.round(nutritionDays.reduce((s, n) => s + n.totalFat, 0) / nutritionDays.length),
+    netCarbs: Math.round(nutritionDays.reduce((s, n) => s + n.totalNetCarbs, 0) / nutritionDays.length * 10) / 10,
+    skaldemanRatio: nutritionDays.filter(n => n.skaldemanRatio).length > 0
+      ? Math.round(nutritionDays.filter(n => n.skaldemanRatio).reduce((s, n) => s + (n.skaldemanRatio || 0), 0) / nutritionDays.filter(n => n.skaldemanRatio).length * 100) / 100
       : null,
   } : null;
 
-  const ketosisStatus = latestNutrition ? getKetosisStatus(latestNutrition.netCarbs) : null;
+  const ketosisStatus = latestNutrition ? getKetosisStatus(latestNutrition.totalNetCarbs) : null;
   const skaldemanStatus = weeklyAvg?.skaldemanRatio ? getSkaldemanStatus(weeklyAvg.skaldemanRatio) : null;
+
+  // Map nutrition days to chart format
+  const nutrition = nutritionDays.map(d => ({
+    date: d.date,
+    calories: d.totalCalories,
+    protein: d.totalProtein,
+    fat: d.totalFat,
+    carbs: d.totalCarbs,
+    fiber: d.totalFiber,
+    netCarbs: d.totalNetCarbs,
+    skaldemanRatio: d.skaldemanRatio,
+  }));
 
   return NextResponse.json({
     user: { name: user?.name, height: user?.height, gender: user?.gender, activityLevel: user?.activityLevel },
     measurements,
     vitals,
     nutrition,
+    goals: {
+      goalWeight: user?.goalWeight,
+      goalCalories: user?.goalCalories,
+      goalNetCarbs: user?.goalNetCarbs,
+      goalProtein: user?.goalProtein,
+    },
     stats: {
       currentWeight: latestMeasurement?.weight || null,
       weightChange,

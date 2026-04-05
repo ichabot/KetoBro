@@ -23,15 +23,30 @@ model User {
 
   // KI-Einstellungen
   llmProvider      String?   // claude | local
-  anthropicApiKey  String?   // Anthropic API Key
-  llmEndpoint      String?   // URL für lokales LLM (OpenAI-kompatibel)
-  llmModel         String?   // Modellname für lokales LLM
+  anthropicApiKey  String?   // verschlüsselt
+  llmEndpoint      String?   // URL für lokales LLM
+  llmModel         String?   // Modellname
+
+  // Ziele
+  goalWeight       Float?    // kg Zielgewicht
+  goalCalories     Int?      // kcal Tagesziel
+  goalNetCarbs     Int?      // g max Netto-Carbs
+  goalProtein      Int?      // g Protein Tagesziel
+
+  // UI Preferences
+  darkMode         Boolean   @default(false)
 
   // Relations
   measurements  Measurement[]
   vitals        Vitals[]
-  nutrition     NutritionLog[]
+  nutritionDays NutritionDay[]
   chatMessages  ChatMessage[]
+  favorites     FavoriteProduct[]
+
+  // Rate limiting
+  lastChatAt    DateTime?
+  chatCount     Int       @default(0)
+  chatCountReset DateTime?
 }
 
 model Measurement {
@@ -41,9 +56,9 @@ model Measurement {
   date      DateTime @default(now())
 
   weight    Float    // kg
-  waist     Float?   // cm - Bauchumfang
-  thigh     Float?   // cm - Beinumfang
-  arm       Float?   // cm - Armumfang
+  waist     Float?   // cm
+  thigh     Float?   // cm
+  arm       Float?   // cm
 
   @@index([userId, date])
 }
@@ -54,32 +69,57 @@ model Vitals {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   timestamp     DateTime @default(now())
 
-  systolic      Int?     // mmHg
-  diastolic     Int?     // mmHg
-  bloodGlucose  Float?   // mg/dl
-  bloodKetones  Float?   // mmol/L
-  urineKetones  Float?   // mg/dl
+  systolic      Int?
+  diastolic     Int?
+  bloodGlucose  Float?
+  bloodKetones  Float?
+  urineKetones  Float?
 
   @@index([userId, timestamp])
 }
 
-model NutritionLog {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date           DateTime @db.Date
+// Tagescontainer für Ernährung
+model NutritionDay {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
 
-  calories       Float
-  protein        Float    // g
-  fat            Float    // g
-  carbs          Float    // g (Brutto)
-  fiber          Float    // g
-  netCarbs       Float    // g (carbs - fiber)
-  skaldemanRatio Float?   // fat / (protein + netCarbs)
+  // Berechnete Tagessummen (Cache)
+  totalCalories      Float  @default(0)
+  totalProtein       Float  @default(0)
+  totalFat           Float  @default(0)
+  totalCarbs         Float  @default(0)
+  totalFiber         Float  @default(0)
+  totalNetCarbs      Float  @default(0)
+  skaldemanRatio     Float?
 
-  source         String   @default("manual") // manual | import
+  meals     MealEntry[]
 
+  @@unique([userId, date])
   @@index([userId, date])
+}
+
+// Einzelne Mahlzeit/Eintrag
+model MealEntry {
+  id              String       @id @default(cuid())
+  nutritionDayId  String
+  nutritionDay    NutritionDay @relation(fields: [nutritionDayId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+
+  mealType        String       // breakfast | lunch | dinner | snack
+  productName     String?      // Name des Produkts
+  barcode         String?      // OFF Barcode
+  portionGrams    Float?       // Portionsgröße
+
+  calories        Float
+  protein         Float
+  fat             Float
+  carbs           Float
+  fiber           Float
+  netCarbs        Float
+
+  @@index([nutritionDayId])
 }
 
 model ChatMessage {
@@ -92,4 +132,26 @@ model ChatMessage {
   content   String
 
   @@index([userId, timestamp])
+}
+
+model FavoriteProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  barcode   String
+  name      String
+  brand     String?
+  image     String?
+
+  // Nährwerte pro 100g
+  caloriesPer100g  Float
+  proteinPer100g   Float
+  fatPer100g       Float
+  carbsPer100g     Float
+  fiberPer100g     Float
+
+  @@unique([userId, barcode])
+  @@index([userId])
 }

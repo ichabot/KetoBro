@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { chatWithKetoBro } from "@/lib/claude";
 import { calcBMR, calcTDEE, calcAge, getKetosisStatus } from "@/lib/calculations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -30,12 +31,19 @@ export async function POST(req: NextRequest) {
 
     const userId = (session.user as { id: string }).id;
 
+    // Rate limiting
+    const rateCheck = await checkRateLimit(userId, prisma);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({
+        error: `Rate Limit erreicht. Bitte warte ${rateCheck.remainingMinutes} Minuten.`
+      }, { status: 429 });
+    }
+
     // Save user message
     await prisma.chatMessage.create({
       data: { userId, role: "user", content: message },
     });
 
-    // Get user with LLM settings
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const latestMeasurement = await prisma.measurement.findFirst({
       where: { userId }, orderBy: { date: "desc" },
@@ -43,23 +51,18 @@ export async function POST(req: NextRequest) {
     const firstMeasurement = await prisma.measurement.findFirst({
       where: { userId }, orderBy: { date: "asc" },
     });
-    const latestNutrition = await prisma.nutritionLog.findFirst({
+    const latestNutrition = await prisma.nutritionDay.findFirst({
       where: { userId }, orderBy: { date: "desc" },
     });
 
-    // Build context
     let bmr: number | null = null;
     let tdee: number | null = null;
     let age: number | null = null;
 
-    if (user?.birthDate) {
-      age = calcAge(new Date(user.birthDate));
-    }
+    if (user?.birthDate) age = calcAge(new Date(user.birthDate));
     if (user?.height && latestMeasurement?.weight && age && user?.gender) {
       bmr = calcBMR(latestMeasurement.weight, user.height, age, user.gender);
-      if (user.activityLevel) {
-        tdee = calcTDEE(bmr, user.activityLevel);
-      }
+      if (user.activityLevel) tdee = calcTDEE(bmr, user.activityLevel);
     }
 
     const weightChange = latestMeasurement && firstMeasurement
@@ -67,21 +70,17 @@ export async function POST(req: NextRequest) {
       : null;
 
     const ketosisStatus = latestNutrition
-      ? getKetosisStatus(latestNutrition.netCarbs).status
+      ? getKetosisStatus(latestNutrition.totalNetCarbs).status
       : null;
 
-    // Get last 10 messages for context
     const recentMessages = await prisma.chatMessage.findMany({
-      where: { userId },
-      orderBy: { timestamp: "desc" },
-      take: 10,
+      where: { userId }, orderBy: { timestamp: "desc" }, take: 10,
     });
 
     const chatMessages = recentMessages
       .reverse()
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    // LLM Config from user settings
     const llmConfig = {
       provider: (user?.llmProvider || "claude") as "claude" | "local",
       apiKey: user?.anthropicApiKey,
@@ -89,7 +88,6 @@ export async function POST(req: NextRequest) {
       model: user?.llmModel,
     };
 
-    // Call LLM
     const response = await chatWithKetoBro(chatMessages, {
       name: user?.name,
       height: user?.height,
@@ -98,14 +96,13 @@ export async function POST(req: NextRequest) {
       activityLevel: user?.activityLevel,
       latestWeight: latestMeasurement?.weight,
       weightChange,
-      latestNetCarbs: latestNutrition?.netCarbs,
+      latestNetCarbs: latestNutrition?.totalNetCarbs,
       latestSkaldemanRatio: latestNutrition?.skaldemanRatio,
       ketosisStatus,
       bmr,
       tdee,
     }, llmConfig);
 
-    // Save assistant message
     const assistantMessage = await prisma.chatMessage.create({
       data: { userId, role: "assistant", content: response },
     });
