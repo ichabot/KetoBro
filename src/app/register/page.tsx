@@ -41,11 +41,11 @@ export default function RegisterPage() {
         return;
       }
 
-      // Auto-login nach Registrierung
+      // Auto-login nach Registrierung → Onboarding
       await signIn("credentials", {
         email,
         password,
-        callbackUrl: "/profile?setup=true",
+        callbackUrl: "/onboarding",
       });
     } catch {
       setError("Ein Fehler ist aufgetreten");

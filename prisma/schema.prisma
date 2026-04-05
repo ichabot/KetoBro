@@ -35,6 +35,7 @@ model User {
 
   // UI Preferences
   darkMode         Boolean   @default(false)
+  onboardingDone   Boolean   @default(false)
 
   // Relations
   measurements  Measurement[]
