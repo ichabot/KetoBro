@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,14 +37,7 @@ interface Favorite {
 export default function TrackPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab");
-      if (tab === "nutrition" || tab === "vitals" || tab === "measurements") return tab;
-    }
-    return "measurements";
-  });
+  const [activeTab, setActiveTab] = useState<Tab>("measurements");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -88,6 +81,15 @@ export default function TrackPage() {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
+  // Read tab from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "nutrition" || tab === "vitals" || tab === "measurements") {
+      setActiveTab(tab);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === "nutrition") {
       fetch("/api/favorites").then(r => r.json()).then(data => {
@@ -102,19 +104,28 @@ export default function TrackPage() {
     setTimeout(() => { setSuccess(""); setError(""); }, 3000);
   };
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const searchProducts = async () => {
-    if (!searchQuery.trim() || searchQuery.length < 2) return;
+    // Read directly from the input element to avoid stale state
+    const query = searchInputRef.current?.value || searchQuery;
+    if (!query.trim() || query.trim().length < 2) {
+      showMessage("Bitte mindestens 2 Zeichen eingeben", true);
+      return;
+    }
     setSearching(true);
     setSearchResults([]);
     setShowFavorites(false);
     try {
-      const res = await fetch(`/api/openfoodfacts/search?q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch("/api/openfoodfacts/search?q=" + encodeURIComponent(query.trim()));
+      if (!res.ok) throw new Error("API Error " + res.status);
       const data = await res.json();
-      if (res.ok) {
-        setSearchResults(data.products || []);
-        if (data.products?.length === 0) showMessage("Keine Produkte gefunden", true);
-      }
-    } catch { showMessage("Suche fehlgeschlagen", true); }
+      setSearchResults(data.products || []);
+      if (data.products?.length === 0) showMessage("Keine Produkte gefunden für: " + query, true);
+    } catch (err) {
+      console.error("Search error:", err);
+      showMessage("Suche fehlgeschlagen — bitte erneut versuchen", true);
+    }
     setSearching(false);
   };
 
@@ -217,6 +228,7 @@ export default function TrackPage() {
         body: JSON.stringify({
           mealType, productName: productName || undefined,
           barcode: selectedProduct?.barcode, portionGrams: portionGrams ? parseFloat(portionGrams) : undefined,
+          imageUrl: selectedProduct?.image || undefined,
           calories: parseFloat(calories), protein: parseFloat(protein), fat: parseFloat(fat), carbs: parseFloat(carbs), fiber: parseFloat(fiber),
         }) });
       if (!res.ok) throw new Error((await res.json()).error);
@@ -296,21 +308,23 @@ export default function TrackPage() {
           onScan={(code) => {
             setShowScanner(false);
             setBarcodeQuery(code);
-            // Auto-lookup
-            setSearching(true);
-            setSearchResults([]);
-            fetch("/api/openfoodfacts/barcode?code=" + encodeURIComponent(code))
-              .then(r => r.json())
-              .then(data => {
-                if (data.barcode) {
-                  setSearchResults([data]);
-                  selectProduct(data, parseFloat(portionGrams) || 100);
-                } else {
-                  showMessage(data.error || "Nicht gefunden", true);
-                }
-              })
-              .catch(() => showMessage("Barcode-Suche fehlgeschlagen", true))
-              .finally(() => setSearching(false));
+            // Delay lookup slightly to let scanner cleanup
+            setTimeout(() => {
+              setSearching(true);
+              setSearchResults([]);
+              fetch("/api/openfoodfacts/barcode?code=" + encodeURIComponent(code))
+                .then(r => r.json())
+                .then(data => {
+                  if (data.barcode) {
+                    setSearchResults([data]);
+                    selectProduct(data, parseFloat(portionGrams) || 100);
+                  } else {
+                    showMessage(data.error || "Nicht gefunden", true);
+                  }
+                })
+                .catch(() => showMessage("Barcode-Suche fehlgeschlagen", true))
+                .finally(() => setSearching(false));
+            }, 300);
           }}
           onClose={() => setShowScanner(false)}
         />
@@ -333,7 +347,7 @@ export default function TrackPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Input placeholder="Produktname..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchProducts()} />
+                <Input ref={searchInputRef} placeholder="Produktname..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchProducts()} />
                 <Button onClick={searchProducts} disabled={searching} variant="outline" className="min-w-[44px]">
                   {searching ? <span className="inline-block w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /> : "🔍"}
                 </Button>

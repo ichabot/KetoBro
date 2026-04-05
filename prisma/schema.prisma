@@ -111,6 +111,7 @@ model MealEntry {
   productName     String?      // Name des Produkts
   barcode         String?      // OFF Barcode
   portionGrams    Float?       // Portionsgröße
+  imageUrl        String?      // Produktbild URL
 
   calories        Float
   protein         Float

@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
             carbs: m.carbs,
             fiber: m.fiber,
             netCarbs: m.netCarbs,
+            imageUrl: m.imageUrl,
           })),
         }
       : null,

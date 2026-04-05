@@ -12,6 +12,7 @@ interface Meal {
   mealType: string;
   productName: string | null;
   portionGrams: number | null;
+  imageUrl: string | null;
   calories: number;
   protein: number;
   fat: number;
@@ -222,14 +223,19 @@ export default function NutritionPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {meals.map((meal) => (
-                      <div key={meal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1 min-w-0">
+                      <div key={meal.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {meal.imageUrl && (
+                            <img src={meal.imageUrl} alt="" className="w-10 h-10 object-contain rounded flex-shrink-0" />
+                          )}
+                          <div className="min-w-0">
                           <div className="font-medium text-sm truncate">
                             {meal.productName || "Manueller Eintrag"}
                           </div>
                           <div className="text-xs text-gray-500">
                             {meal.portionGrams ? `${meal.portionGrams}g · ` : ""}
                             {Math.round(meal.calories)} kcal · P:{Math.round(meal.protein)}g · F:{Math.round(meal.fat)}g · NC:{Math.round(meal.netCarbs)}g
+                          </div>
                           </div>
                         </div>
                         <Button

@@ -1,0 +1,1 @@
+ALTER TABLE "MealEntry" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
