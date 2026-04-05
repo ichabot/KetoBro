@@ -4,7 +4,7 @@ KetoBro ist eine Webanwendung, die Menschen auf ihrem ketogenen Ernährungsweg b
 
 ## ⚠️ Hinweis / Haftungsausschluss
 
-> Dieses Projekt wurde mit KI-Unterstützung entwickelt ("Vibe Coding") und verwendet Open-Source-Abhängigkeiten, die **nicht unabhängig geprüft** wurden. Die Software wird „wie besehen" unter der MIT-Lizenz bereitgestellt, ohne jegliche Gewährleistung.
+> Dieses Projekt wurde mit KI-Unterstützung entwickelt ("Vibe Coding") und verwendet Open-Source-Abhängigkeiten, die **nicht unabhängig geprüft** wurden. Die Software wird unter der MIT-Lizenz bereitgestellt, ohne jegliche Gewährleistung.
 
 **Wichtig:**
 
