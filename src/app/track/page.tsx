@@ -56,7 +56,13 @@ export default function TrackPage() {
   const [urineKetones, setUrineKetones] = useState("");
 
   // Nutrition
-  const [mealType, setMealType] = useState("lunch");
+  const [mealType, setMealType] = useState(() => {
+    const hour = new Date().getHours();
+    if (hour < 10) return "breakfast";
+    if (hour < 14) return "lunch";
+    if (hour < 17) return "snack";
+    return "dinner";
+  });
   const [productName, setProductName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
