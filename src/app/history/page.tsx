@@ -126,7 +126,7 @@ export default function HistoryPage() {
       <h1 className="text-3xl font-bold mb-6">📋 Verlauf</h1>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
+      <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -145,7 +145,7 @@ export default function HistoryPage() {
         <div className="space-y-3">
           {measurements.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center text-gray-500">
+              <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
                 Noch keine Messungen vorhanden
               </CardContent>
             </Card>
@@ -156,7 +156,7 @@ export default function HistoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{fmtDate(m.date)}</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span className="font-semibold">{m.weight} kg</span>
                         {m.waist && <span className="ml-3">Bauch: {m.waist} cm</span>}
                         {m.thigh && <span className="ml-3">Bein: {m.thigh} cm</span>}
@@ -167,7 +167,7 @@ export default function HistoryPage() {
                       variant="outline"
                       onClick={() => deleteMeasurement(m.id)}
                       disabled={deleting === m.id}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 px-2"
                     >
                       {deleting === m.id ? "..." : "🗑️"}
                     </Button>
@@ -184,7 +184,7 @@ export default function HistoryPage() {
         <div className="space-y-3">
           {vitals.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center text-gray-500">
+              <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
                 Noch keine Vitalwerte vorhanden
               </CardContent>
             </Card>
@@ -195,7 +195,7 @@ export default function HistoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{fmtDateTime(v.timestamp)}</div>
-                      <div className="text-sm text-gray-600 mt-1 space-x-3">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 space-x-3">
                         {v.systolic && v.diastolic && <span>🩸 {v.systolic}/{v.diastolic} mmHg</span>}
                         {v.bloodGlucose && <span>💉 {v.bloodGlucose} mg/dl</span>}
                         {v.bloodKetones && <span>🔬 {v.bloodKetones} mmol/L</span>}
@@ -205,7 +205,7 @@ export default function HistoryPage() {
                       variant="outline"
                       onClick={() => deleteVital(v.id)}
                       disabled={deleting === v.id}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 px-2"
                     >
                       {deleting === v.id ? "..." : "🗑️"}
                     </Button>
@@ -222,7 +222,7 @@ export default function HistoryPage() {
         <div className="space-y-3">
           {nutrition.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center text-gray-500">
+              <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
                 Noch keine Ernährungsdaten vorhanden
               </CardContent>
             </Card>
@@ -233,13 +233,13 @@ export default function HistoryPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="font-medium">{fmtDate(n.date)}</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span>{Math.round(n.totalCalories)} kcal</span>
                         <span className="ml-3">P: {Math.round(n.totalProtein)}g</span>
                         <span className="ml-3">F: {Math.round(n.totalFat)}g</span>
                         <span className="ml-3">NC: {Math.round(n.totalNetCarbs)}g</span>
                         {(n.meals || n._count) && (
-                          <span className="ml-3 text-gray-400">
+                          <span className="ml-3 text-gray-400 dark:text-gray-500">
                             ({n.meals?.length || n._count?.meals || 0} Mahlzeiten)
                           </span>
                         )}
@@ -257,7 +257,7 @@ export default function HistoryPage() {
                         variant="outline"
                         onClick={() => deleteNutritionDay(n.id)}
                         disabled={deleting === n.id}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 px-2"
                       >
                         {deleting === n.id ? "..." : "🗑️"}
                       </Button>

@@ -366,7 +366,7 @@ export default function TrackPage() {
 
               {/* Favorites */}
               {showFavorites && favorites.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto overflow-x-hidden">
                   <div className="text-sm font-medium text-gray-500 dark:text-gray-400">⭐ Deine Favoriten</div>
                   {favorites.map((fav) => (
                     <button key={fav.barcode} onClick={() => selectFavorite(fav)}
@@ -388,7 +388,7 @@ export default function TrackPage() {
 
               {/* Search Results */}
               {searchResults.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto overflow-x-hidden">
                   {searchResults.map((product) => (
                     <div key={product.barcode} className={`p-3 rounded-lg border transition-colors ${selectedProduct?.barcode === product.barcode ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700"}`}>
                       <button onClick={() => selectProduct(product, parseFloat(portionGrams) || 100)} className="w-full text-left">
