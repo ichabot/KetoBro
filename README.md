@@ -229,13 +229,13 @@ Die folgenden Informationen dienen nur der Orientierung und ersetzen keine fach�
 - **Nicht geeignet für:** Schwangere/Stillende (ohne ärztliche Begleitung), Kinder, Menschen mit Typ-1-Diabetes, Leber-/Nierenerkrankungen, Essstörungen
 - **Regelmäßige Kontrolle:** Blutwerte (besonders Cholesterin, Leberwerte) regelmäßig vom Arzt prüfen lassen
 
-## 📄 Lizenz
-
-MIT License — siehe [LICENSE](LICENSE)
-
 ## ⚠️ Nochmal in aller Deutlichkeit
 
 **KetoBro ist ein Hobby-Projekt und keine medizinische Anwendung.** Die App, ihre Berechnungen und die KI-Antworten ersetzen keine ärztliche Beratung, keine Ernährungsberatung und keine medizinische Diagnose. Nutzung auf eigene Verantwortung. Bei gesundheitlichen Fragen oder Beschwerden immer einen Arzt aufsuchen.
+
+## 📄 Lizenz
+
+MIT License — siehe [LICENSE](LICENSE)
 
 ---
 
