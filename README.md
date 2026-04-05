@@ -70,7 +70,7 @@ KetoBro nutzt die großartige [Open Food Facts](https://world.openfoodfacts.org/
 - Favoriten speichern
 
 ### 🤖 KI-Assistent „KetoBro"
-- Personalisierter Chat mit Zugriff auf alle User-Daten
+- Personalisierter Chat mit Zugriff auf alle User-Metriken
 - 6 Anbieter: Claude, OpenAI, Mistral, Gemini, DeepSeek, lokales LLM
 - Keto-Wissen, Fortschrittsanalyse, Tipps
 - Deutsche Sprache mit Umlauten
