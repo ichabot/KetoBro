@@ -58,12 +58,12 @@ function ProgressBar({ value, max, label, unit }: { value: number; max: number; 
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
-        <span className="text-gray-600">{label}</span>
+        <span className="text-gray-600 dark:text-gray-400">{label}</span>
         <span className={over ? "text-red-600 font-semibold" : "text-gray-700"}>
           {Math.round(value)} / {max} {unit}
         </span>
       </div>
-      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${over ? "bg-red-500" : "bg-green-500"}`}
           style={{ width: `${pct}%` }}
@@ -142,10 +142,10 @@ export default function NutritionPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">🍽️ Tagesübersicht</h1>
+      <h1 className="text-3xl font-bold mb-6">🍽️ Tagesübersicht</h1>
 
       {/* Date Navigation */}
-      <div className="flex items-center justify-between mb-6 bg-white rounded-lg border p-3">
+      <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700 p-3">
         <Button variant="outline" onClick={() => changeDate(-1)}>← Vorher</Button>
         <div className="text-center">
           <div className="font-semibold text-lg">{formatDate(date)}</div>
@@ -170,19 +170,19 @@ export default function NutritionPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="text-2xl font-bold">{Math.round(day.totalCalories)}</div>
                   <div className="text-xs text-gray-500">kcal</div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <div className="text-2xl font-bold">{Math.round(day.totalProtein)}g</div>
                   <div className="text-xs text-gray-500">Protein</div>
                 </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <div className="text-2xl font-bold">{Math.round(day.totalFat)}g</div>
                   <div className="text-xs text-gray-500">Fett</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-2xl font-bold">{Math.round(day.totalNetCarbs)}g</div>
                   <div className="text-xs text-gray-500">Netto-Carbs</div>
                 </div>

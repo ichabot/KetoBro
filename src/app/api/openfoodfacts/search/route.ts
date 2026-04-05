@@ -41,6 +41,48 @@ function mapProduct(p: OFFProduct) {
   };
 }
 
+async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<{ products: OFFProduct[]; count: number }> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      // OpenFoodFacts often returns 503 but still sends valid JSON data!
+      // So we try to parse the body regardless of status code
+      const text = await response.text();
+      
+      try {
+        const data = JSON.parse(text);
+        if (data.products && Array.isArray(data.products)) {
+          return { products: data.products, count: data.count || 0 };
+        }
+      } catch {
+        // JSON parse failed — body was not valid JSON
+      }
+
+      // If we got here, the response had no usable data
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 500 * attempt)); // wait before retry
+        continue;
+      }
+    } catch (err) {
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 500 * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+  
+  return { products: [], count: 0 };
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
@@ -54,36 +96,22 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Use the v2 search API with specific fields for faster response
     const fields = "code,product_name,product_name_de,brands,image_small_url,nutriments,serving_size,nutrition_grades";
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=10&fields=${fields}&lc=de`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const { products: rawProducts, count } = await fetchWithRetry(url);
 
-    const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!response.ok) throw new Error("OpenFoodFacts API Fehler: " + response.status);
-
-    const data = await response.json();
-    const products = (data.products || [])
+    const products = rawProducts
       .filter((p: OFFProduct) => (p.product_name || p.product_name_de) && p.nutriments)
       .map(mapProduct);
 
     return NextResponse.json({
       products,
-      total: data.count || 0,
+      total: count,
       page: parseInt(page),
     });
   } catch (error) {
     console.error("OFF search error:", error);
-    if (error instanceof Error && error.name === "AbortError") {
-      return NextResponse.json({ error: "Suche hat zu lange gedauert. Bitte erneut versuchen." }, { status: 504 });
-    }
     return NextResponse.json({ error: "Suche fehlgeschlagen. Bitte erneut versuchen." }, { status: 500 });
   }
 }

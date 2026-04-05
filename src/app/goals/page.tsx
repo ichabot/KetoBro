@@ -72,7 +72,7 @@ export default function GoalsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">🎯 Ziele</h1>
+      <h1 className="text-3xl font-bold mb-6">🎯 Ziele</h1>
 
       {message && (
         <div className={`p-3 rounded-md mb-4 text-sm ${message.includes("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>

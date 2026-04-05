@@ -123,7 +123,7 @@ export default function HistoryPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">📋 Verlauf</h1>
+      <h1 className="text-3xl font-bold mb-6">📋 Verlauf</h1>
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
@@ -132,7 +132,7 @@ export default function HistoryPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.id ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              activeTab === tab.id ? "bg-white dark:bg-gray-700 text-green-700 dark:text-green-400 shadow-sm" : "text-gray-600 dark:text-gray-400"
             }`}
           >
             {tab.label} ({tab.count})
