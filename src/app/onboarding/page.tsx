@@ -10,6 +10,30 @@ import { Select } from "@/components/ui/select";
 
 const TOTAL_STEPS = 5;
 
+const ACTIVITY_FACTORS: Record<string, number> = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
+};
+
+function calcTdee(weight: string, height: string, birthDate: string, gender: string, activityLevel: string): { bmr: number; tdee: number } | null {
+  const w = parseFloat(weight);
+  const h = parseFloat(height);
+  const factor = ACTIVITY_FACTORS[activityLevel];
+  if (!w || !h || !birthDate || !gender || !factor) return null;
+
+  const age = Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  if (age < 10 || age > 120) return null;
+
+  const bmr = gender === "female"
+    ? 10 * w + 6.25 * h - 5 * age - 161
+    : 10 * w + 6.25 * h - 5 * age + 5;
+
+  return { bmr: Math.round(bmr), tdee: Math.round(bmr * factor) };
+}
+
 export default function OnboardingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -35,7 +59,17 @@ export default function OnboardingPage() {
     if (session?.user?.name) setName(session.user.name);
   }, [session]);
 
-  const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  const next = () => {
+    // When leaving step 2 (body data) → auto-calculate calorie goal
+    if (step === 2 && !goalCalories) {
+      const result = calcTdee(weight, height, birthDate, gender, activityLevel);
+      if (result) {
+        const deficit = Math.round(result.tdee * 0.8); // 20% Defizit
+        setGoalCalories(deficit.toString());
+      }
+    }
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  };
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
   const finish = async () => {
@@ -222,6 +256,19 @@ export default function OnboardingPage() {
               <div className="space-y-2">
                 <Label>Tägliches Kalorienziel (kcal)</Label>
                 <Input type="number" placeholder="z.B. 1800" value={goalCalories} onChange={(e) => setGoalCalories(e.target.value)} />
+                {(() => {
+                  const result = calcTdee(weight, height, birthDate, gender, activityLevel);
+                  if (!result) return null;
+                  const deficit = Math.round(result.tdee * 0.8);
+                  return (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg space-y-1">
+                      <div>📊 Dein Grundumsatz (BMR): <strong>{result.bmr} kcal</strong></div>
+                      <div>📊 Gesamtumsatz (TDEE): <strong>{result.tdee} kcal</strong></div>
+                      <div>🎯 Mit 20% Defizit: <strong>{deficit} kcal</strong> (Abnehmen)</div>
+                      <div className="pt-1 text-gray-400 dark:text-gray-500">Zum Halten: {result.tdee} kcal · Zum Aufbauen: {Math.round(result.tdee * 1.1)} kcal</div>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="space-y-2">
                 <Label>Max. Netto-Carbs pro Tag (g)</Label>
