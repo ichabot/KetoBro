@@ -267,8 +267,10 @@ export default function SettingsPage() {
         <CardHeader><CardTitle>🍎 OpenFoodFacts</CardTitle></CardHeader>
         <CardContent>
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-            <div className="flex gap-2 mb-2"><Badge>Kostenlos</Badge><Badge variant="secondary">Kein API Key nötig</Badge></div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Über 3 Millionen Produkte. Nutze die Produktsuche unter &quot;Erfassen → Ernährung&quot;.</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              KetoBro nutzt <a href="https://world.openfoodfacts.org/" target="_blank" rel="noopener" className="text-green-600 dark:text-green-400 font-medium hover:underline">Open Food Facts</a> — eine freie, offene Lebensmittel-Datenbank mit über 3 Millionen Produkten, gepflegt von einer weltweiten Community. 🙏
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Nutze die Produktsuche unter &quot;Erfassen → Ernährung&quot;.</p>
           </div>
         </CardContent>
       </Card>
