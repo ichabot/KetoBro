@@ -166,32 +166,81 @@ export default function SettingsPage() {
           <CardDescription>Für den KetoBro Chat</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-3">
-            <button onClick={() => setLlmProvider("claude")} className={`flex-1 p-4 rounded-lg border-2 transition-colors ${llmProvider === "claude" ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700"}`}>
-              <div className="font-semibold">☁️ Claude</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Anthropic Cloud API</div>
-            </button>
-            <button onClick={() => setLlmProvider("local")} className={`flex-1 p-4 rounded-lg border-2 transition-colors ${llmProvider === "local" ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700"}`}>
-              <div className="font-semibold">🖥️ Lokal</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">LM Studio, Ollama</div>
-            </button>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: "claude", icon: "☁️", label: "Claude", sub: "Anthropic" },
+              { id: "openai", icon: "🧠", label: "OpenAI", sub: "GPT-4o" },
+              { id: "mistral", icon: "🌬️", label: "Mistral", sub: "Mistral AI" },
+              { id: "gemini", icon: "💎", label: "Gemini", sub: "Google" },
+              { id: "local", icon: "🖥️", label: "Lokal", sub: "LM Studio etc." },
+            ].map((p) => (
+              <button key={p.id} onClick={() => setLlmProvider(p.id)} className={`p-3 rounded-lg border-2 transition-colors text-center ${llmProvider === p.id ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300"}`}>
+                <div className="text-xl">{p.icon}</div>
+                <div className="font-semibold text-sm mt-1">{p.label}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{p.sub}</div>
+              </button>
+            ))}
           </div>
+
+          {/* Claude */}
           {llmProvider === "claude" && (
             <div className="space-y-2">
               <Label>Anthropic API Key {hasApiKey && <Badge className="ml-2">Gespeichert</Badge>}</Label>
-              <Input type="password" placeholder="sk-ant-api03-..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
+              <Input type="password" placeholder="sk-ant-..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
               <p className="text-xs text-gray-400">Von <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" className="text-green-600 hover:underline">console.anthropic.com</a></p>
             </div>
           )}
+
+          {/* OpenAI */}
+          {llmProvider === "openai" && (
+            <div className="space-y-2">
+              <Label>OpenAI API Key {hasApiKey && <Badge className="ml-2">Gespeichert</Badge>}</Label>
+              <Input type="password" placeholder="sk-..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
+              <p className="text-xs text-gray-400">Von <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" className="text-green-600 hover:underline">platform.openai.com</a></p>
+              <div className="space-y-2 pt-2">
+                <Label>Modell <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <Input placeholder="gpt-4o-mini (Standard)" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Mistral */}
+          {llmProvider === "mistral" && (
+            <div className="space-y-2">
+              <Label>Mistral API Key {hasApiKey && <Badge className="ml-2">Gespeichert</Badge>}</Label>
+              <Input type="password" placeholder="..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
+              <p className="text-xs text-gray-400">Von <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener" className="text-green-600 hover:underline">console.mistral.ai</a></p>
+              <div className="space-y-2 pt-2">
+                <Label>Modell <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <Input placeholder="mistral-large-latest (Standard)" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Gemini */}
+          {llmProvider === "gemini" && (
+            <div className="space-y-2">
+              <Label>Google Gemini API Key {hasApiKey && <Badge className="ml-2">Gespeichert</Badge>}</Label>
+              <Input type="password" placeholder="AI..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
+              <p className="text-xs text-gray-400">Von <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" className="text-green-600 hover:underline">aistudio.google.com</a></p>
+              <div className="space-y-2 pt-2">
+                <Label>Modell <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <Input placeholder="gemini-2.0-flash (Standard)" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Local LLM */}
           {llmProvider === "local" && (
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>API Endpoint</Label>
                 <Input placeholder="http://localhost:1234/v1" value={llmEndpoint} onChange={(e) => setLlmEndpoint(e.target.value)} />
+                <p className="text-xs text-gray-400">OpenAI-kompatible API (LM Studio, Ollama, vLLM, etc.)</p>
               </div>
               <div className="space-y-2">
                 <Label>Modellname</Label>
-                <Input placeholder="z.B. mistral-7b" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
+                <Input placeholder="z.B. llama-3.1-8b" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
               </div>
             </div>
           )}

@@ -15,8 +15,8 @@ interface UserContext {
   tdee?: number | null;
 }
 
-interface LLMConfig {
-  provider: "claude" | "local";
+export interface LLMConfig {
+  provider: string; // claude | openai | mistral | gemini | local
   apiKey?: string | null;
   endpoint?: string | null;
   model?: string | null;
@@ -74,6 +74,13 @@ function buildSystemPrompt(ctx: UserContext): string {
   return lines.join("\n");
 }
 
+// Provider endpoint + default model mapping
+const PROVIDER_CONFIG: Record<string, { endpoint: string; defaultModel: string }> = {
+  openai: { endpoint: "https://api.openai.com/v1", defaultModel: "gpt-4o-mini" },
+  mistral: { endpoint: "https://api.mistral.ai/v1", defaultModel: "mistral-large-latest" },
+  gemini: { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai", defaultModel: "gemini-2.0-flash" },
+};
+
 async function chatViaClaude(
   messages: { role: "user" | "assistant"; content: string }[],
   systemPrompt: string,
@@ -85,29 +92,30 @@ async function chatViaClaude(
     model: "claude-sonnet-4-20250514",
     max_tokens: 2000,
     system: systemPrompt,
-    messages: messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
   return textBlock?.text || "Entschuldige, ich konnte keine Antwort generieren.";
 }
 
-async function chatViaLocalLLM(
+async function chatViaOpenAICompat(
   messages: { role: "user" | "assistant"; content: string }[],
   systemPrompt: string,
   endpoint: string,
-  model: string
+  model: string,
+  apiKey?: string
 ): Promise<string> {
   const url = endpoint.replace(/\/$/, "") + "/chat/completions";
 
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) headers["Authorization"] = "Bearer " + apiKey;
+
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({
-      model: model || "default",
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -119,11 +127,11 @@ async function chatViaLocalLLM(
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error("Lokales LLM Fehler: " + response.status + " - " + errText.slice(0, 200));
+    throw new Error("LLM API Fehler (" + response.status + "): " + errText.slice(0, 200));
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || "Keine Antwort vom lokalen LLM.";
+  return data.choices?.[0]?.message?.content || "Keine Antwort erhalten.";
 }
 
 export async function chatWithKetoBro(
@@ -132,16 +140,24 @@ export async function chatWithKetoBro(
   llmConfig: LLMConfig
 ): Promise<string> {
   const systemPrompt = buildSystemPrompt(userContext);
+  const provider = llmConfig.provider || "claude";
 
-  if (llmConfig.provider === "local" && llmConfig.endpoint) {
-    return chatViaLocalLLM(messages, systemPrompt, llmConfig.endpoint, llmConfig.model || "default");
+  // Local LLM (custom endpoint)
+  if (provider === "local") {
+    if (!llmConfig.endpoint) throw new Error("Kein LLM-Endpoint konfiguriert. Bitte unter Einstellungen (⚙️) hinterlegen.");
+    return chatViaOpenAICompat(messages, systemPrompt, llmConfig.endpoint, llmConfig.model || "default");
   }
 
-  // Claude (default)
+  // Cloud providers with OpenAI-compatible API
+  if (provider in PROVIDER_CONFIG) {
+    const config = PROVIDER_CONFIG[provider];
+    if (!llmConfig.apiKey) throw new Error("Kein API Key für " + provider.charAt(0).toUpperCase() + provider.slice(1) + " hinterlegt. Bitte unter Einstellungen (⚙️) konfigurieren.");
+    const model = llmConfig.model || config.defaultModel;
+    return chatViaOpenAICompat(messages, systemPrompt, config.endpoint, model, llmConfig.apiKey);
+  }
+
+  // Claude (default) — uses native Anthropic SDK
   const apiKey = llmConfig.apiKey || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("Kein API Key konfiguriert. Bitte hinterlege deinen Anthropic API Key in den Einstellungen (⚙️).");
-  }
-
+  if (!apiKey) throw new Error("Kein API Key konfiguriert. Bitte hinterlege deinen API Key in den Einstellungen (⚙️).");
   return chatViaClaude(messages, systemPrompt, apiKey);
 }
