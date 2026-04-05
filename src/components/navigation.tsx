@@ -12,6 +12,7 @@ const navItems = [
   { href: "/track", label: "Daten erfassen", icon: "📝" },
   { href: "/chat", label: "KetoBro Chat", icon: "🤖" },
   { href: "/profile", label: "Profil", icon: "👤" },
+  { href: "/settings", label: "Einstellungen", icon: "⚙️" },
 ];
 
 export function Navigation() {

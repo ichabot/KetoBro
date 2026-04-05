@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       data: { userId, role: "user", content: message },
     });
 
-    // Get user context
+    // Get user with LLM settings
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const latestMeasurement = await prisma.measurement.findFirst({
       where: { userId }, orderBy: { date: "desc" },
@@ -81,7 +81,15 @@ export async function POST(req: NextRequest) {
       .reverse()
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    // Call Claude
+    // LLM Config from user settings
+    const llmConfig = {
+      provider: (user?.llmProvider || "claude") as "claude" | "local",
+      apiKey: user?.anthropicApiKey,
+      endpoint: user?.llmEndpoint,
+      model: user?.llmModel,
+    };
+
+    // Call LLM
     const response = await chatWithKetoBro(chatMessages, {
       name: user?.name,
       height: user?.height,
@@ -95,7 +103,7 @@ export async function POST(req: NextRequest) {
       ketosisStatus,
       bmr,
       tdee,
-    });
+    }, llmConfig);
 
     // Save assistant message
     const assistantMessage = await prisma.chatMessage.create({
@@ -105,6 +113,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(assistantMessage, { status: 201 });
   } catch (error) {
     console.error("Chat error:", error);
-    return NextResponse.json({ error: "Chat-Fehler aufgetreten" }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : "Chat-Fehler aufgetreten";
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }

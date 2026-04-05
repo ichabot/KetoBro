@@ -21,6 +21,12 @@ model User {
   birthDate     DateTime?
   activityLevel String?   // sedentary, light, moderate, active, very_active
 
+  // KI-Einstellungen
+  llmProvider      String?   // claude | local
+  anthropicApiKey  String?   // Anthropic API Key
+  llmEndpoint      String?   // URL für lokales LLM (OpenAI-kompatibel)
+  llmModel         String?   // Modellname für lokales LLM
+
   // Relations
   measurements  Measurement[]
   vitals        Vitals[]

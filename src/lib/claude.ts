@@ -1,9 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
-
 interface UserContext {
   name?: string | null;
   height?: number | null;
@@ -17,6 +13,13 @@ interface UserContext {
   ketosisStatus?: string | null;
   bmr?: number | null;
   tdee?: number | null;
+}
+
+interface LLMConfig {
+  provider: "claude" | "local";
+  apiKey?: string | null;
+  endpoint?: string | null;
+  model?: string | null;
 }
 
 function genderLabel(g: string | null | undefined): string {
@@ -71,14 +74,17 @@ function buildSystemPrompt(ctx: UserContext): string {
   return lines.join("\n");
 }
 
-export async function chatWithKetoBro(
+async function chatViaClaude(
   messages: { role: "user" | "assistant"; content: string }[],
-  userContext: UserContext
+  systemPrompt: string,
+  apiKey: string
 ): Promise<string> {
+  const anthropic = new Anthropic({ apiKey });
+
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 2000,
-    system: buildSystemPrompt(userContext),
+    system: systemPrompt,
     messages: messages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -87,4 +93,55 @@ export async function chatWithKetoBro(
 
   const textBlock = response.content.find((b) => b.type === "text");
   return textBlock?.text || "Entschuldige, ich konnte keine Antwort generieren.";
+}
+
+async function chatViaLocalLLM(
+  messages: { role: "user" | "assistant"; content: string }[],
+  systemPrompt: string,
+  endpoint: string,
+  model: string
+): Promise<string> {
+  const url = endpoint.replace(/\/$/, "") + "/chat/completions";
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: model || "default",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error("Lokales LLM Fehler: " + response.status + " - " + errText.slice(0, 200));
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "Keine Antwort vom lokalen LLM.";
+}
+
+export async function chatWithKetoBro(
+  messages: { role: "user" | "assistant"; content: string }[],
+  userContext: UserContext,
+  llmConfig: LLMConfig
+): Promise<string> {
+  const systemPrompt = buildSystemPrompt(userContext);
+
+  if (llmConfig.provider === "local" && llmConfig.endpoint) {
+    return chatViaLocalLLM(messages, systemPrompt, llmConfig.endpoint, llmConfig.model || "default");
+  }
+
+  // Claude (default)
+  const apiKey = llmConfig.apiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("Kein API Key konfiguriert. Bitte hinterlege deinen Anthropic API Key in den Einstellungen (⚙️).");
+  }
+
+  return chatViaClaude(messages, systemPrompt, apiKey);
 }
