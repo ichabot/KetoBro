@@ -58,9 +58,9 @@ KetoBro ist eine Webanwendung, die Menschen auf ihrem ketogenen Ernährungsweg b
 - **Mahlzeiten:** Mehrere Einträge pro Tag (automatische Tageszeit-Erkennung)
 
 ### 🔍 OpenFoodFacts Integration
-KetoBro nutzt die großartige [Open Food Facts](https://world.openfoodfacts.org/) Datenbank — ein freies, offenes Gemeinschaftsprojekt mit über 3 Millionen Lebensmitteln weltweit. Danke an alle Mitwirkenden! 🙏
+KetoBro nutzt die großartige [Open Food Facts](https://world.openfoodfacts.org/) Datenbank — ein freies, offenes Gemeinschaftsprojekt mit über 3 Millionen Lebensmitteln weltweit.
 
-> 💚 **Open Food Facts unterstützen:** Open Food Facts ist ein gemeinnütziges Projekt, das von Freiwilligen getragen wird und auf Spenden angewiesen ist, um die Datenbank frei und offen für alle zu halten. Wenn dir KetoBro gefällt und du das Projekt dahinter unterstützen möchtest: [Hier spenden](https://donorbox.org/your-donation-to-open-food-facts)
+> 💚 **Open Food Facts unterstützen:** Open Food Facts ist ein gemeinnütziges Projekt, das von Freiwilligen getragen wird und auf Spenden angewiesen ist. Wenn dir KetoBro gefällt und du das Projekt dahinter unterstützen möchtest: [Hier spenden](https://donorbox.org/your-donation-to-open-food-facts)
 
 - Produktsuche nach Name (Search-a-licious Engine)
 - Barcode-Lookup
