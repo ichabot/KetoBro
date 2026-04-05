@@ -4,11 +4,14 @@ import { authOptions } from "@/lib/auth";
 
 const USER_AGENT = "KetoBro/1.0 (https://github.com/ichabot/KetoBro)";
 
-interface OFFProduct {
+// Use the newer Search-a-licious engine — much more reliable than cgi/search.pl
+const SEARCH_URL = "https://search.openfoodfacts.org/search";
+
+interface SearchHit {
   code: string;
   product_name?: string;
   product_name_de?: string;
-  brands?: string;
+  brands?: string[] | string;
   image_small_url?: string;
   nutriments?: {
     "energy-kcal_100g"?: number;
@@ -22,12 +25,13 @@ interface OFFProduct {
   nutrition_grades?: string;
 }
 
-function mapProduct(p: OFFProduct) {
+function mapProduct(p: SearchHit) {
   const n = p.nutriments || {};
+  const brands = Array.isArray(p.brands) ? p.brands.join(", ") : (p.brands || "");
   return {
     barcode: p.code,
     name: p.product_name_de || p.product_name || "Unbekanntes Produkt",
-    brand: p.brands || "",
+    brand: brands,
     image: p.image_small_url || null,
     nutritionGrade: p.nutrition_grades || null,
     servingSize: p.serving_size || null,
@@ -41,55 +45,13 @@ function mapProduct(p: OFFProduct) {
   };
 }
 
-async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<{ products: OFFProduct[]; count: number }> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      const response = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      // OpenFoodFacts often returns 503 but still sends valid JSON data!
-      // So we try to parse the body regardless of status code
-      const text = await response.text();
-      
-      try {
-        const data = JSON.parse(text);
-        if (data.products && Array.isArray(data.products)) {
-          return { products: data.products, count: data.count || 0 };
-        }
-      } catch {
-        // JSON parse failed — body was not valid JSON
-      }
-
-      // If we got here, the response had no usable data
-      if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, 500 * attempt)); // wait before retry
-        continue;
-      }
-    } catch (err) {
-      if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, 500 * attempt));
-        continue;
-      }
-      throw err;
-    }
-  }
-  
-  return { products: [], count: 0 };
-}
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q");
-  const page = searchParams.get("page") || "1";
+  const page = parseInt(searchParams.get("page") || "1");
 
   if (!query || query.length < 2) {
     return NextResponse.json({ error: "Suchbegriff zu kurz" }, { status: 400 });
@@ -97,21 +59,40 @@ export async function GET(req: NextRequest) {
 
   try {
     const fields = "code,product_name,product_name_de,brands,image_small_url,nutriments,serving_size,nutrition_grades";
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=10&fields=${fields}&lc=de`;
+    const url = `${SEARCH_URL}?q=${encodeURIComponent(query)}&page=${page}&page_size=10&fields=${fields}&langs=de`;
 
-    const { products: rawProducts, count } = await fetchWithRetry(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const products = rawProducts
-      .filter((p: OFFProduct) => (p.product_name || p.product_name_de) && p.nutriments)
-      .map(mapProduct);
+    const response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error("Search API error: " + response.status);
+    }
+
+    const data = await response.json();
+    const hits: SearchHit[] = data.hits || [];
+
+    const products = hits
+      .filter((p) => (p.product_name || p.product_name_de) && p.nutriments)
+      .map(mapProduct)
+      // Filter out products with no nutritional data at all
+      .filter((p) => p.per100g.calories > 0 || p.per100g.protein > 0 || p.per100g.fat > 0);
 
     return NextResponse.json({
       products,
-      total: count,
-      page: parseInt(page),
+      total: data.count || 0,
+      page,
     });
   } catch (error) {
     console.error("OFF search error:", error);
-    return NextResponse.json({ error: "Suche fehlgeschlagen. Bitte erneut versuchen." }, { status: 500 });
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json({ error: "Suche hat zu lange gedauert." }, { status: 504 });
+    }
+    return NextResponse.json({ error: "Suche fehlgeschlagen." }, { status: 500 });
   }
 }
