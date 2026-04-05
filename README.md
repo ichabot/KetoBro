@@ -18,6 +18,20 @@ KetoBro ist eine Webanwendung, die Menschen auf ihrem ketogenen Ernährungsweg b
 
 **Kurz gesagt:** Nutze KetoBro als Hilfsmittel und Orientierung — nicht als alleinige Grundlage für Gesundheitsentscheidungen. Im Zweifel immer einen Arzt fragen.
 
+## 📸 Screenshots
+
+| Dashboard | Tagesansicht |
+|:---:|:---:|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Tagesansicht](docs/screenshots/tagesansicht.png) |
+
+| Erfassen & Produktsuche | Einstellungen |
+|:---:|:---:|
+| ![Erfassen](docs/screenshots/erfassen.png) | ![Einstellungen](docs/screenshots/einstellungen.png) |
+
+| Verlauf |
+|:---:|
+| ![Verlauf](docs/screenshots/verlauf.png) |
+
 ## ✨ Features
 
 ### 📊 Dashboard
@@ -53,7 +67,7 @@ KetoBro ist eine Webanwendung, die Menschen auf ihrem ketogenen Ernährungsweg b
 
 ### 🤖 KI-Assistent „KetoBro"
 - Personalisierter Chat mit Zugriff auf alle User-Daten
-- 5 Anbieter: Claude, OpenAI, Mistral, Gemini, lokales LLM
+- 6 Anbieter: Claude, OpenAI, Mistral, Gemini, DeepSeek, lokales LLM
 - Keto-Wissen, Fortschrittsanalyse, Tipps
 - Deutsche Sprache mit Umlauten
 - Rate Limiting (50 Nachrichten/Stunde)
@@ -89,7 +103,7 @@ KetoBro ist eine Webanwendung, die Menschen auf ihrem ketogenen Ernährungsweg b
 | Frontend & Backend | Next.js 16 (App Router, TypeScript) |
 | Datenbank | PostgreSQL 16 |
 | ORM | Prisma 6 |
-| KI | Anthropic Claude, OpenAI, Mistral, Google Gemini, lokale LLMs |
+| KI | Anthropic Claude, OpenAI, Mistral, Google Gemini, DeepSeek, lokale LLMs |
 | Auth | NextAuth.js (Credentials) |
 | UI | Tailwind CSS, shadcn/ui-Style, Dark Mode |
 | Charts | Recharts |

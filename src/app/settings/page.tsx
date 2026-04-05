@@ -172,6 +172,7 @@ export default function SettingsPage() {
               { id: "openai", icon: "🧠", label: "OpenAI", sub: "GPT-4o" },
               { id: "mistral", icon: "🌬️", label: "Mistral", sub: "Mistral AI" },
               { id: "gemini", icon: "💎", label: "Gemini", sub: "Google" },
+              { id: "deepseek", icon: "🐋", label: "DeepSeek", sub: "DeepSeek AI" },
               { id: "local", icon: "🖥️", label: "Lokal", sub: "LM Studio etc." },
             ].map((p) => (
               <button key={p.id} onClick={() => setLlmProvider(p.id)} className={`p-3 rounded-lg border-2 transition-colors text-center ${llmProvider === p.id ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300"}`}>
@@ -226,6 +227,19 @@ export default function SettingsPage() {
               <div className="space-y-2 pt-2">
                 <Label>Modell <span className="text-gray-400 font-normal">(optional)</span></Label>
                 <Input placeholder="gemini-2.0-flash (Standard)" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* DeepSeek */}
+          {llmProvider === "deepseek" && (
+            <div className="space-y-2">
+              <Label>DeepSeek API Key {hasApiKey && <Badge className="ml-2">Gespeichert</Badge>}</Label>
+              <Input type="password" placeholder="sk-..." value={anthropicApiKey} onChange={(e) => setAnthropicApiKey(e.target.value)} />
+              <p className="text-xs text-gray-400">Von <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener" className="text-green-600 hover:underline">platform.deepseek.com</a></p>
+              <div className="space-y-2 pt-2">
+                <Label>Modell <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <Input placeholder="deepseek-chat (Standard)" value={llmModel} onChange={(e) => setLlmModel(e.target.value)} />
               </div>
             </div>
           )}

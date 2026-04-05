@@ -79,6 +79,7 @@ const PROVIDER_CONFIG: Record<string, { endpoint: string; defaultModel: string }
   openai: { endpoint: "https://api.openai.com/v1", defaultModel: "gpt-4o-mini" },
   mistral: { endpoint: "https://api.mistral.ai/v1", defaultModel: "mistral-large-latest" },
   gemini: { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai", defaultModel: "gemini-2.0-flash" },
+  deepseek: { endpoint: "https://api.deepseek.com/v1", defaultModel: "deepseek-chat" },
 };
 
 async function chatViaClaude(
