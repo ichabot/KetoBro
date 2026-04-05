@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { BarcodeScanner } from "@/components/barcode-scanner";
 
 type Tab = "measurements" | "vitals" | "nutrition";
 
@@ -36,7 +37,14 @@ interface Favorite {
 export default function TrackPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("measurements");
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "nutrition" || tab === "vitals" || tab === "measurements") return tab;
+    }
+    return "measurements";
+  });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -74,6 +82,7 @@ export default function TrackPage() {
   // Favorites
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -281,6 +290,32 @@ export default function TrackPage() {
         </Card>
       )}
 
+      {/* Barcode Scanner Modal */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={(code) => {
+            setShowScanner(false);
+            setBarcodeQuery(code);
+            // Auto-lookup
+            setSearching(true);
+            setSearchResults([]);
+            fetch("/api/openfoodfacts/barcode?code=" + encodeURIComponent(code))
+              .then(r => r.json())
+              .then(data => {
+                if (data.barcode) {
+                  setSearchResults([data]);
+                  selectProduct(data, parseFloat(portionGrams) || 100);
+                } else {
+                  showMessage(data.error || "Nicht gefunden", true);
+                }
+              })
+              .catch(() => showMessage("Barcode-Suche fehlgeschlagen", true))
+              .finally(() => setSearching(false));
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       {/* Nutrition */}
       {activeTab === "nutrition" && (
         <div className="space-y-6">
@@ -299,11 +334,14 @@ export default function TrackPage() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input placeholder="Produktname..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchProducts()} />
-                <Button onClick={searchProducts} disabled={searching} variant="outline">{searching ? "..." : "🔍"}</Button>
+                <Button onClick={searchProducts} disabled={searching} variant="outline" className="min-w-[44px]">
+                  {searching ? <span className="inline-block w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /> : "🔍"}
+                </Button>
               </div>
               <div className="flex gap-2">
                 <Input placeholder="Barcode (z.B. 4006040003625)" value={barcodeQuery} onChange={(e) => setBarcodeQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && lookupBarcode()} />
                 <Button onClick={lookupBarcode} disabled={searching} variant="outline">{searching ? "..." : "📊"}</Button>
+                <Button onClick={() => setShowScanner(true)} variant="outline" title="Kamera-Scanner">📷</Button>
               </div>
 
               {/* Favorites */}

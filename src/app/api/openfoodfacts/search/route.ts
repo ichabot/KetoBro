@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const OFF_BASE = "https://world.openfoodfacts.org";
 const USER_AGENT = "KetoBro/1.0 (https://github.com/ichabot/KetoBro)";
 
 interface OFFProduct {
@@ -55,17 +54,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const url = `${OFF_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=10&fields=code,product_name,product_name_de,brands,image_small_url,nutriments,serving_size,nutrition_grades&lc=de`;
+    // Use the v2 search API with specific fields for faster response
+    const fields = "code,product_name,product_name_de,brands,image_small_url,nutriments,serving_size,nutrition_grades";
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=10&fields=${fields}&lc=de`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     const response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
-    if (!response.ok) throw new Error("OpenFoodFacts API Fehler");
+    if (!response.ok) throw new Error("OpenFoodFacts API Fehler: " + response.status);
 
     const data = await response.json();
     const products = (data.products || [])
-      .filter((p: OFFProduct) => p.product_name || p.product_name_de)
+      .filter((p: OFFProduct) => (p.product_name || p.product_name_de) && p.nutriments)
       .map(mapProduct);
 
     return NextResponse.json({
@@ -75,6 +81,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("OFF search error:", error);
-    return NextResponse.json({ error: "Suche fehlgeschlagen" }, { status: 500 });
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json({ error: "Suche hat zu lange gedauert. Bitte erneut versuchen." }, { status: 504 });
+    }
+    return NextResponse.json({ error: "Suche fehlgeschlagen. Bitte erneut versuchen." }, { status: 500 });
   }
 }

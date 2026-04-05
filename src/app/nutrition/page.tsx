@@ -260,7 +260,7 @@ export default function NutritionPage() {
 
       {/* Add more button */}
       <div className="text-center mt-6">
-        <Button onClick={() => router.push("/track")} className="px-8">
+        <Button onClick={() => router.push("/track?tab=nutrition")} className="px-8">
           ➕ Mahlzeit hinzufügen
         </Button>
       </div>
